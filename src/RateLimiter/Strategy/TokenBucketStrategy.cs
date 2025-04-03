@@ -11,10 +11,12 @@ namespace RateLimiter.Strategy
     {
         private readonly IRateLimiterCache _cache;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
+        private readonly bool _isSlidingWindow;
 
-        public TokenBucketStrategy(IRateLimiterCache cache)
+        public TokenBucketStrategy(IRateLimiterCache cache, bool isSlidingWindow = false)
         {
             _cache = cache;
+            _isSlidingWindow = isSlidingWindow;
         }
 
         public bool PermitRequest(string key, IRateLimiter service)
@@ -24,11 +26,27 @@ namespace RateLimiter.Strategy
             {
                 TokenBucketRecord result = (TokenBucketRecord)_cache.Get(key) ?? ResetInterval(key, service.Permits);
                 var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                var intervalEnd = result.StartInterval + service.Seconds;
 
-                if (currentTime > intervalEnd)
+                if (_isSlidingWindow)
                 {
-                    result = ResetInterval(key, service.Permits);
+                    // Sliding window: Check within the last 24 hours
+                    var intervalStart = result.StartInterval;
+                    var intervalEnd = intervalStart + 86400; // 24 hours in seconds
+                    if (currentTime > intervalEnd)
+                    {
+                        result = ResetInterval(key, service.Permits);
+                    }
+                }
+                else
+                {
+                    // Absolute window: Reset at 00:00 UTC
+                    var intervalStart = GetStartOfDay();
+                    var intervalEnd = intervalStart + service.Seconds;
+
+                    if (currentTime > intervalEnd)
+                    {
+                        result = ResetInterval(key, service.Permits);
+                    }
                 }
 
                 if (result.Tokens <= 0)
@@ -77,6 +95,13 @@ namespace RateLimiter.Strategy
             };
             _cache.Set(key, record);
             return record;
+        }
+        
+        private long GetStartOfDay()
+        {
+            var utcNow = DateTimeOffset.UtcNow;
+            var startOfDay = new DateTimeOffset(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, TimeSpan.Zero);
+            return startOfDay.ToUnixTimeSeconds();
         }
     }
 }

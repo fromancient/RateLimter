@@ -58,7 +58,8 @@ namespace ExampleProject
                     100, // permits per window
                     86400, // time window in seconds (24 hours for absolute or another value)
                     new TokenBucketStrategy(
-                        new InMemoryCache(new MemoryCache("RateLimiterCache"))
+                        new InMemoryCache(new MemoryCache("RateLimiterCache")),
+                        isSlidingWindow: false // Set this flag to true for Sliding Window
                     )
                 )
             );
