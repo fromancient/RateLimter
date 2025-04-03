@@ -42,7 +42,7 @@ RateLimiter
 ## Installation
 Clone the repository and navigate to the project folder:
 ```sh
-$ git clone https://github.com/yourusername/RateLimiter.git
+$ git clone https://github.com/fromancient/RateLimiter.git
 $ cd RateLimiter
 ```
 
