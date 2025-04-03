@@ -55,8 +55,8 @@ namespace ExampleProject
             // IMPORTANT: This must come before the UseEndpoints middleware.
             app.UseRateLimiter(
                 new RateLimiterService(
-                    100,
-                    3600,
+                    100, // permits per window
+                    86400, // time window in seconds (24 hours for absolute or another value)
                     new TokenBucketStrategy(
                         new InMemoryCache(new MemoryCache("RateLimiterCache"))
                     )
